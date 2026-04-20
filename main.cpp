@@ -131,6 +131,147 @@ public:
 
 template <typename T>
 
+class DoublyLinkedList {
+private:
+    shared_ptr<Node<T>> head;
+    shared_ptr<Node<T>> tail;
+    size_t list_size;
+
+public:
+    DoublyLinkedList() : head(nullptr), tail(nullptr), list_size(0) {}
+
+    void push_front(const T& val) {
+        auto newNode = make_shared<Node<T>>(val);
+        if (empty()) {
+            head = tail = newNode;
+        } else {
+            newNode->next = head;
+            head->prev = newNode;
+            head = newNode;
+        }
+        list_size++;
+    }
+
+    void push_back(const T& val) {
+        auto newNode = make_shared<Node<T>>(val);
+        if (empty()) {
+            head = tail = newNode;
+        } else {
+            tail->next = newNode;
+            newNode->prev = tail;
+            tail = newNode;
+        }
+        list_size++;
+    }
+
+    void pop_front() {
+        if (empty()) throw runtime_error("List is empty. Cannot pop_front.");
+        if (list_size == 1) {
+            head = tail = nullptr;
+        } else {
+            head = head->next;
+            head->prev.reset();
+        }
+        list_size--;
+    }
+
+    void pop_back() {
+        if (empty()) throw runtime_error("List is empty. Cannot pop_back.");
+        if (list_size == 1) {
+            head = tail = nullptr;
+        } else {
+            tail = tail->prev.lock();
+            tail->next = nullptr;
+        }
+        list_size--;
+    }
+
+    T& operator[](size_t index) {
+        if (index >= list_size) throw out_of_range("Index out of bounds.");
+        auto current = head;
+        for (size_t i = 0; i < index; ++i) {
+            current = current->next;
+        }
+        return current->data;
+    }
+
+    void insert(size_t index, const T& val) {
+        if (index > list_size) throw out_of_range("Index out of bounds.");
+        if (index == 0) {
+            push_front(val);
+            return;
+        }
+        if (index == list_size) {
+            push_back(val);
+            return;
+        }
+
+        auto newNode = make_shared<Node<T>>(val);
+        auto current = head;
+        for (size_t i = 0; i < index; ++i) {
+            current = current->next;
+        }
+
+        auto prevNode = current->prev.lock();
+        newNode->next = current;
+        newNode->prev = prevNode;
+        prevNode->next = newNode;
+        current->prev = newNode;
+        
+        list_size++;
+    }
+
+    void erase(size_t index) {
+        if (index >= list_size) throw out_of_range("Index out of bounds.");
+        if (index == 0) {
+            pop_front();
+            return;
+        }
+        if (index == list_size - 1) {
+            pop_back();
+            return;
+        }
+
+        auto current = head;
+        for (size_t i = 0; i < index; ++i) {
+            current = current->next;
+        }
+
+        auto prevNode = current->prev.lock();
+        auto nextNode = current->next;
+
+        if (prevNode) prevNode->next = nextNode;
+        if (nextNode) nextNode->prev = prevNode;
+
+        list_size--;
+    }
+
+    size_t size() const { return list_size; }
+
+    bool empty() const { return list_size == 0; }
+
+    int find(const T& val) const {
+        auto current = head;
+        int index = 0;
+        while (current) {
+            if (current->data == val) return index;
+            current = current->next;
+            index++;
+        }
+        return -1;
+    }
+
+    friend ostream& operator<<(ostream& os, const DoublyLinkedList& list) {
+        auto current = list.head;
+        while (current) {
+            os << current->data << " <-> ";
+            current = current->next;
+        }
+        os << "null";
+        return os;
+    }
+};
+
 int main() {
     try {
         cout << "=== Singly Linked List Test (Int) ===\n";
